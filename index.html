@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Linear Regression Tutorial</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Linear Regression — Playground</h1>
+    <p class="sub">Let’s start simple: generate sample data and see the scatter plot.</p>
+  </header>
+
+  <main>
+    <section class="controls minimal">
+      <button id="btnGenerate" class="primary">Generate sample data</button>
+      <div class="control-inline">
+        <label for="bSlider">y =</label>
+        <input id="bSlider" type="range" min="-50" max="150" step="1" value="50" />
+        <span id="bValue" class="mono">50</span>
+      </div>
+      <span id="status" class="status" aria-live="polite"></span>
+    </section>
+
+    <section class="chart-wrap">
+      <canvas id="regressionChart" aria-label="Scatter plot with regression line" role="img"></canvas>
+    </section>
+  </main>
+
+  <footer>
+    <small>Front-end only · No frameworks · Chart.js for visualization</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
