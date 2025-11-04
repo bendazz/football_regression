@@ -6,7 +6,6 @@ let baselineB = 50;
 
 const el = (id) => document.getElementById(id);
 const btnGenerate = el('btnGenerate');
-const statusEl = el('status');
 const bSlider = el('bSlider');
 const bValueEl = el('bValue');
 
@@ -47,16 +46,10 @@ function randomScenario() {
   return { slope, intercept, noise };
 }
 
-function setStatus(msg, isError = false) {
-  if (!statusEl) return;
-  statusEl.textContent = msg || '';
-  statusEl.classList.toggle('error', !!isError);
-}
-
 function initChart() {
   const ctx = document.getElementById('regressionChart');
   if (typeof Chart === 'undefined') {
-    setStatus('Error: Chart library failed to load.', true);
+    console.error('Error: Chart library failed to load.');
     return;
   }
   chart = new Chart(ctx, {
@@ -144,7 +137,7 @@ function initChart() {
       maintainAspectRatio: false,
       animation: false,
       plugins: {
-        legend: { labels: { color: '#111827' } },
+        legend: { display: false },
         tooltip: { callbacks: { label: ctx => `(${ctx.parsed.x.toFixed(2)}, ${ctx.parsed.y.toFixed(2)})` } }
       },
       scales: {
@@ -287,14 +280,15 @@ btnGenerate.addEventListener('click', () => {
   updateSliderRangeFromData();
   render();
   const trend = slope < 0 ? 'trending down' : 'trending up';
-  setStatus(`Plotted ${points.length} points — ${trend} (slope ${slope.toFixed(2)}, noise ${noise.toFixed(1)}).`);
+  // Optional: console feedback instead of UI text to keep UI clean
+  console.log(`Plotted ${points.length} points — ${trend} (slope ${slope.toFixed(2)}, noise ${noise.toFixed(1)}).`);
 });
 
-if (bSlider && bValueEl) {
-  bValueEl.textContent = String(baselineB);
+if (bSlider) {
+  if (bValueEl) bValueEl.textContent = String(baselineB);
   bSlider.addEventListener('input', () => {
     baselineB = parseFloat(bSlider.value);
-    bValueEl.textContent = String(baselineB);
+    if (bValueEl) bValueEl.textContent = String(baselineB);
     updateBaselineLine();
     updateResidualExtremaDatasets();
     if (chart) chart.update();
