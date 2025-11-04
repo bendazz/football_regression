@@ -4,13 +4,16 @@ let points = [];
 let chart = null;
 let baselineB = 50; // intercept b
 let slopeM = 1;     // slope m
+let yAxisRange = { min: -50, max: 150 }; // fixed y-range between data generations
 
 const el = (id) => document.getElementById(id);
 const btnGenerate = el('btnGenerate');
+const btnDownload = el('btnDownloadCsv');
 const bSlider = el('bSlider');
 const bValueEl = el('bValue');
 const meanYEl = el('meanYValue');
 const mSlider = el('mSlider');
+const mValueEl = el('mValue');
 
 // Random normal via Box-Muller
 function rndNorm() {
@@ -104,13 +107,15 @@ function initChart() {
       },
       scales: {
         x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#111827' }, suggestedMin: 0, suggestedMax: 100 },
-        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#111827' }, suggestedMin: -50, suggestedMax: 150 },
+          y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#111827' } },
       }
     },
     plugins: [residualLinesPlugin]
   });
 
   chart._idx = { data: 0, baseline: 1, maxPos: 2, maxNeg: 3, yProj: 4, meanLine: 5, meanMarker: 6 };
+  // Apply initial fixed y-range
+  applyYAxisRange(yAxisRange);
 }
 
 function updateBaselineLine() {
@@ -190,6 +195,7 @@ function updateSliderRangeFromData() {
     bSlider.max = String(150);
     baselineB = Math.max(parseFloat(bSlider.min), Math.min(parseFloat(bSlider.max), baselineB));
     bSlider.value = String(baselineB);
+    updateSliderDisplays();
     return;
   }
   let minY = Infinity, maxY = -Infinity;
@@ -202,13 +208,39 @@ function updateSliderRangeFromData() {
   const minVal = parseFloat(bSlider.min), maxVal = parseFloat(bSlider.max);
   baselineB = Math.max(minVal, Math.min(maxVal, baselineB));
   bSlider.value = String(baselineB);
+  updateSliderDisplays();
+}
+
+function updateSliderDisplays() {
+  if (bValueEl) bValueEl.textContent = Number(baselineB).toFixed(0);
+  if (mValueEl) mValueEl.textContent = Number(slopeM).toFixed(1);
+}
+
+function computeYAxisRangeFromData() {
+  if (!points || points.length === 0) return { min: -50, max: 150 };
+  let minY = Infinity, maxY = -Infinity;
+  for (const p of points) { if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
+  let span = maxY - minY; if (!Number.isFinite(span) || span < 1) span = 20;
+  const pad = Math.max(10, 0.25 * span);
+  return { min: Math.floor(minY - pad), max: Math.ceil(maxY + pad) };
+}
+
+function applyYAxisRange(range) {
+  if (!chart) return;
+  chart.options.scales.y.min = range.min;
+  chart.options.scales.y.max = range.max;
 }
 
 btnGenerate.addEventListener('click', () => {
   const { slope, intercept, noise } = randomScenario();
   points = generateData(50, slope, intercept, noise);
+  // Fix y-axis range based on the newly generated points (and keep it stable during slider moves)
+  yAxisRange = computeYAxisRangeFromData();
+  applyYAxisRange(yAxisRange);
   updateSliderRangeFromData();
+  updateSliderDisplays();
   render();
+  if (btnDownload) btnDownload.disabled = !(points && points.length);
   const trend = slope < 0 ? 'trending down' : 'trending up';
   console.log(`Plotted ${points.length} points — ${trend} (slope ${slope.toFixed(2)}, noise ${noise.toFixed(1)}).`);
 });
@@ -216,6 +248,7 @@ btnGenerate.addEventListener('click', () => {
 if (bSlider) {
   bSlider.addEventListener('input', () => {
     baselineB = parseFloat(bSlider.value);
+    updateSliderDisplays();
     if (chart) render();
   });
 }
@@ -223,6 +256,7 @@ if (bSlider) {
 if (mSlider) {
   mSlider.addEventListener('input', () => {
     slopeM = parseFloat(mSlider.value);
+    updateSliderDisplays();
     if (chart) render();
   });
 }
@@ -231,3 +265,26 @@ if (mSlider) {
 initChart();
 updateBaselineLine();
 updateSliderRangeFromData();
+updateSliderDisplays();
+if (btnDownload) btnDownload.disabled = true;
+
+function downloadCsv() {
+  if (!points || points.length === 0) return;
+  const header = ['x','y'];
+  const rows = points.map(p => [p.x, p.y].map(v => Number(v).toFixed(4)).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  a.download = `linear_regression_data_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+if (btnDownload) {
+  btnDownload.addEventListener('click', downloadCsv);
+}

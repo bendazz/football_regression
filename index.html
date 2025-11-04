@@ -15,13 +15,16 @@
   <main>
     <section class="controls minimal">
       <button id="btnGenerate" class="primary">Generate sample data</button>
+      <button id="btnDownloadCsv" title="Download current data as CSV">Download CSV</button>
       <div class="control-inline">
         <label for="bSlider">y =</label>
         <input id="bSlider" type="range" min="-50" max="150" step="1" value="50" />
+        <span id="bValue" class="mono" aria-live="polite">50</span>
       </div>
       <div class="control-inline">
         <label for="mSlider">slope m =</label>
         <input id="mSlider" type="range" min="-3" max="3" step="0.1" value="1" />
+        <span id="mValue" class="mono" aria-live="polite">1.0</span>
       </div>
     </section>
 
