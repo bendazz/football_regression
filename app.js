@@ -2,13 +2,15 @@
 
 let points = [];
 let chart = null;
-let baselineB = 50;
+let baselineB = 50; // intercept b
+let slopeM = 1;     // slope m
 
 const el = (id) => document.getElementById(id);
 const btnGenerate = el('btnGenerate');
 const bSlider = el('bSlider');
 const bValueEl = el('bValue');
 const meanYEl = el('meanYValue');
+const mSlider = el('mSlider');
 
 // Random normal via Box-Muller
 function rndNorm() {
@@ -55,7 +57,7 @@ function initChart() {
       let maxIdx = 0, minIdx = 0;
       let maxVal = -Infinity, minVal = Infinity;
       for (let i = 0; i < points.length; i++) {
-        const r = points[i].y - baselineB;
+        const r = points[i].y - (baselineB + slopeM * points[i].x);
         if (r > maxVal) { maxVal = r; maxIdx = i; }
         if (r < minVal) { minVal = r; minIdx = i; }
       }
@@ -63,7 +65,7 @@ function initChart() {
       function drawDashed(p, color) {
         const x = xScale.getPixelForValue(p.x);
         const y1 = yScale.getPixelForValue(p.y);
-        const y2 = yScale.getPixelForValue(baselineB);
+        const y2 = yScale.getPixelForValue(baselineB + slopeM * p.x);
         ctx2.save();
         ctx2.strokeStyle = color;
         ctx2.setLineDash([6,4]);
@@ -84,7 +86,7 @@ function initChart() {
     data: {
       datasets: [
         { label: 'Sample data', data: [], pointBackgroundColor: '#2563eb', pointBorderColor: '#2563eb', pointRadius: 4, showLine: false },
-        { label: 'y = b', data: [], type: 'line', borderColor: '#059669', borderWidth: 2, pointRadius: 0, tension: 0 },
+  { label: 'y = b + m x', data: [], type: 'line', borderColor: '#059669', borderWidth: 2, pointRadius: 0, tension: 0 },
         { label: 'Max positive residual', data: [], backgroundColor: '#ef4444', pointBackgroundColor: '#ef4444', pointBorderColor: '#ef4444', pointBorderWidth: 0, pointRadius: 10, pointHoverRadius: 12, order: 10, showLine: false },
         { label: 'Max negative residual', data: [], backgroundColor: '#8b5cf6', pointBackgroundColor: '#8b5cf6', pointBorderColor: '#8b5cf6', pointBorderWidth: 0, pointRadius: 10, pointHoverRadius: 12, order: 11, showLine: false },
         { label: 'Projections on y-axis', data: [], backgroundColor: 'rgba(107,114,128,0.45)', pointBackgroundColor: 'rgba(107,114,128,0.45)', pointBorderColor: 'rgba(107,114,128,0.6)', pointBorderWidth: 0, pointRadius: 3, showLine: false, order: 1 },
@@ -120,7 +122,7 @@ function updateBaselineLine() {
     xMin = Math.min(...xs);
     xMax = Math.max(...xs);
   }
-  ds.data = [ { x: xMin, y: baselineB }, { x: xMax, y: baselineB } ];
+  ds.data = [ { x: xMin, y: baselineB + slopeM * xMin }, { x: xMax, y: baselineB + slopeM * xMax } ];
 }
 
 function updateResidualExtremaDatasets() {
@@ -133,7 +135,7 @@ function updateResidualExtremaDatasets() {
   let maxIdx = 0, minIdx = 0;
   let maxVal = -Infinity, minVal = Infinity;
   for (let i = 0; i < points.length; i++) {
-    const r = points[i].y - baselineB;
+    const r = points[i].y - (baselineB + slopeM * points[i].x);
     if (r > maxVal) { maxVal = r; maxIdx = i; }
     if (r < minVal) { minVal = r; minIdx = i; }
   }
@@ -214,9 +216,14 @@ btnGenerate.addEventListener('click', () => {
 if (bSlider) {
   bSlider.addEventListener('input', () => {
     baselineB = parseFloat(bSlider.value);
-    updateBaselineLine();
-    updateResidualExtremaDatasets();
-    if (chart) chart.update();
+    if (chart) render();
+  });
+}
+
+if (mSlider) {
+  mSlider.addEventListener('input', () => {
+    slopeM = parseFloat(mSlider.value);
+    if (chart) render();
   });
 }
 
